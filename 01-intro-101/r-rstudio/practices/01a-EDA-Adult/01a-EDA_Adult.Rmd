@@ -55,3 +55,19 @@ if (datosAdult$education[i] %in% E18){
 table(datosAdult$education)
 ```
 
+# Análisis exploratorio de datos - data frame datosAdult
+
+Tras cargar el fichero, cargo la librería dplyr
+
+```{r}
+library(dplyr)
+```
+
+Realizo una primera observación de las variables y de sus tipos
+
+```{r}
+glimpse(datosAdult)
+```
+
+Así vemos que hay 32,561 observaciones, 15 variables de las cuales 6 son enteros y el resto caracteres.
+
