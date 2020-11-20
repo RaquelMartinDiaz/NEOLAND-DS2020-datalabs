@@ -329,7 +329,7 @@ Vamos a ver por continentes, cuáles tienes mayores ingresos.
 table(datosAdult1$`native-country`, datosAdult1$income)
 ```
 
-Y en porcentajes.
+Y en porcentajes. 
 
 ```{r}
 round(prop.table(table(datosAdult1$`native-country`, datosAdult1$income))*100,2)
