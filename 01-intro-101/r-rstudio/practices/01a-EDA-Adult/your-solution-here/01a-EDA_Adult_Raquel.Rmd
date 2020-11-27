@@ -1,0 +1,502 @@
+---
+title: "08_EDA_AdultCensus"
+author: "Raquel Martín - Bootcamp NEOLAND"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    highlight: tango
+    theme: spacelab
+    toc: yes
+---
+
+Basado en la última práctica EDA Titanic en R Studio (el fichero original así como el fichero HTML se encuentra en Google Drive), deben realizar una EDA completo para este dataset:
+
+https://archive.ics.uci.edu/ml/datasets/adult
+
+**IMPORTANTE**:
+Los pasos a realizar son:
+- [ ] exploración
+- [ ] limpieza
+- [ ] discretización
+
+
+Intentar crear el output de salida en formato HTML (buscar info de `knit` y sus dependencias)
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Cargamos el juego de datos
+datosAdult <- read.csv('http://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data',stringsAsFactors = FALSE, header = FALSE)
+
+# Nombres de los atributos
+names(datosAdult) <- c("age","workclass","fnlwgt","education","education-num","marital-status","occupation","relationship","race","sex","capital-gain","capital-loss","hour-per-week","native-country","income")
+```
+
+```{r}
+unique(datosAdult$education)
+unique(datosAdult$`education-num`)
+```
+
+
+
+
+```{r}
+filas= nrow(datosAdult)
+E18=c(" Preschool"," 1st-4th"," 5th-6th"," 7th-8th"," 9th"," 10th" ," 11th"," 12th")
+E912=c(" HS-grad"," Some-college"," Assoc-acdm"," Assoc-voc")
+E1316=c(" Bachelors"," Masters" ," Prof-school"," Doctorate")
+ for (i in 1:filas){
+if (datosAdult$education[i] %in% E18){
+  datosAdult$education[i]= "E18"
+} else if(datosAdult$education[i] %in% E912){
+  datosAdult$education[i]= "E912"
+} else if (datosAdult$education[i] %in% E1316){
+  datosAdult$education[i]= "E1316"
+}
+}
+table(datosAdult$education)
+```
+
+# Análisis exploratorio de datos - data frame datosAdult
+
+## Primeras observaciones de las variables - exploración 
+
+Tras cargar el fichero, cargo la librería dplyr
+
+```{r}
+library(dplyr)
+```
+
+Realizo una primera observación de las variables y de sus tipos
+
+```{r}
+glimpse(datosAdult)
+```
+
+Así vemos que hay 32,561 observaciones, 15 variables de las cuales 6 son enteros y el resto caracteres.
+
+Vamos a ver las 6 primeras filas y las 6 últimas
+
+```{r}
+head(datosAdult)
+```
+```{r}
+tail(datosAdult)
+```
+
+Antes de comenzar, vamos a comprobar si hay algún valor NA dentro de nuestras observaciones:
+
+```{r}
+any(is.na.data.frame(datosAdult))
+```
+
+Como vemos que no hay ningún valor NA, procedemos a realizar un resumen de las variables, donde podemos obesrvar cálculos como la media, mediana, mínimo/máximo y cuartiles de nuestras variables numéricas, así como un resumen de las variables de caracteres. 
+
+
+```{r}
+summary(datosAdult)
+```
+
+Y vemos los valores con unique:
+
+```{r}
+unique(datosAdult$workclass)
+```
+```{r}
+unique(datosAdult$education)
+```
+
+```{r}
+unique(datosAdult$`marital-status`)
+```
+
+```{r}
+unique(datosAdult$occupation)
+```
+
+Dentro de la variable Occupation, vemos que existen valores de origen desconocido (" ?"). Más adelante veremos el número de observaciones y qué hacemos con ellos. 
+
+Seguimos viendo los valores de nuestras variables. 
+
+```{r}
+unique(datosAdult$relationship)
+```
+
+```{r}
+unique(datosAdult$race)
+```
+
+```{r}
+unique(datosAdult$sex)
+```
+
+```{r}
+unique(datosAdult$`native-country`)
+```
+
+Aquí también observamos que hay observaciones de pais desconocido. 
+
+```{r}
+unique(datosAdult$income)
+```
+
+
+## Limpieza de los datos 
+
+Calculamos las tablas de frecuencia para ver el numero de ocurrencias de cada categoría de las variables de caracteres
+
+```{r}
+table(datosAdult$`native-country`)
+```
+
+Hay muchas categorías diferentes, por lo que vamos a agruparlas por continentes para que quede más limpio. 
+
+Antes de ello, vamos a realizar un back up de nuestro data frame y seguiremos trabajando desde allí.
+
+```{r}
+datosAdult1 <- datosAdult
+```
+
+Para hacer la agrupación por continentes, primero creamos las variables que contengan cada país. Como tenemos 583 observaciones que no sabemos a qué país corresponden y además hay 80 observaciones que tampoco sabemos a qué país pertenecen exactamente (South), vamos a agruparlas:
+
+```{r}
+Asia <- c(" Cambodia", " China", " Hong", " India", " Iran", " Japan", " Laos", " Philippines", " Taiwan", " Thailand", " Vietnam")
+Nor_America <- c(" Canada", " United-States")
+Sur_America <- c(" Columbia", " Cuba", " Dominican-Republic", " Ecuador", " El-Salvador", " Guatemala", " Haiti", " Honduras", " Jamaica", " Mexico", " Nicaragua", " Outlying-US(Guam-USVI-etc", " Peru", " Puerto-Rico", " Trinidad&Tobago")
+Europa <-c(" England", " France", " Germany", " Greece", " Holand-Netherlands", " Hungary", " Ireland", " Italy", " Poland", " Portugal", " Scotland", " Yugoslavia")
+Otros <- c(" South", " ?")
+```
+
+Realizamos una función que agrupe los paises según el continente al que pertenezcan según las variables que acabamos de definir:
+
+```{r}
+continente <-function(pais){
+    if(pais %in% Asia){
+      return("Asia")
+    }else if(pais %in% Nor_America){
+      return("Nor_America")
+    }else if(pais %in% Sur_America){
+      return("Sur_America")
+    }else if(pais %in% Europa){
+      return("Europa")
+    }else{
+      return("Otros")
+    }
+}
+```
+
+
+Cambiamos la variable native-country con los datos de los continentes que acabamos de hacer:
+
+```{r}
+datosAdult1$`native-country`<- sapply(datosAdult1$`native-country`, continente)
+
+```
+
+Y comprobamos que la variable se haya modificado correctamente:
+
+```{r}
+table(datosAdult1$`native-country`)
+```
+
+Tras agrupar los datos según los paises, vemos que ahora tenemos solo 5 valores distintos. 
+
+
+Vamos a seguir con el resto de variables. 
+```{r}
+table(datosAdult1$`marital-status`)
+```
+
+Vemos los diferentes datos de la variable estado marital. Observamos, por ejemplo, que diferencia entre casados con un civil, con un no civil y casados que su pareja vive en otro lugar por trabajo (married-af-spouse, married-civ-spouse y married-spouse-absent). Agrupamos esos datos como casados. También vamos a diferenciar entre los que han estado casados pero ya no lo están (divorciados, separados y viudos) y aquellos que no han estado nunca casados.
+
+Para ello definimos 3 variables de casado, no.casado y nunca.casado:
+
+```{r}
+casado <- c(" Married-AF-spouse", " Married-civ-spouse", "Married-spouse-absent")
+no.casado <- c(" Divorced", " Separated", " Widowed")
+nunca.casado <- c(" Never-married")
+```
+
+Realizamos una función que devuelva cada una de las variables que hemos creado según el estado civil:
+
+```{r}
+estado.civil <- function(estado){
+  if(estado %in% casado){
+    return("casado")
+  }else if(estado %in% no.casado){
+    return("no.casado")
+  }else{
+    return("nunca.casado")
+  }
+}
+```
+
+Cambiamos los datos en la variable marital-status según la función que acabamos de hacer:
+
+```{r}
+datosAdult1$`marital-status`<- sapply(datosAdult1$`marital-status`, estado.civil)
+```
+
+Y comprobamos que se haya cambiado correctamente:
+
+```{r}
+table(datosAdult1$`marital-status`)
+```
+
+Vamos a ver ahora la variable Education:
+
+```{r}
+table(datosAdult1$education)
+```
+
+Podemos observar que hay muchos tipos distintos de datos, por ello diferenciamos según lo creado en el ejemplo del principio, adaptándolo a nuestro df de back up en el que estamos realizando todos los cambios:
+
+
+```{r}
+filas= nrow(datosAdult1)
+E18=c(" Preschool"," 1st-4th"," 5th-6th"," 7th-8th"," 9th"," 10th" ," 11th"," 12th")
+E912=c(" HS-grad"," Some-college"," Assoc-acdm"," Assoc-voc")
+E1316=c(" Bachelors"," Masters" ," Prof-school"," Doctorate")
+ for (i in 1:filas){
+if (datosAdult1$education[i] %in% E18){
+  datosAdult1$education[i]= "E18"
+} else if(datosAdult1$education[i] %in% E912){
+  datosAdult1$education[i]= "E912"
+} else if (datosAdult1$education[i] %in% E1316){
+  datosAdult1$education[i]= "E1316"
+}
+}
+table(datosAdult1$education)
+```
+
+Ahora vamos a limpiar la variable Workclass:
+
+```{r}
+table(datosAdult1$workclass)
+```
+
+Vemos que hay 1836 observaciones en las que se desconoce a qué se dedican los sujetos. Como es una cantidad elevada de momento vamos a dejarlos como desconocidos.
+
+Pese a que cada país tiene una legislación diferente en cuanto a tipos de contrato, observamos que hay trabajos para el gobierno (Federal-gov, Local-gov, State-gov), personas que trabajan con contratos de los que en España llamamos autónomos, ya sea por su cuenta o dentro de una empresa (Self-emp-inc y Self-emp-not-inc), personas que trabajan por cuenta ajena (Private) y personas que o bien nunca han trabajado o no cobran (Never-worked, Without-pay). Estos últimos casos representan solo 21 observaciones de nuestro data frame de 32.561 observaciones. 
+
+Vamos a crear nuestras variables según lo que hemos visto, agrupando por un lado lo que conocemos como autónomos y por otro aquellos que nunca han trabajado o que no cobran. El resto vamos a dejarlo tal y como está: 
+
+```{r}
+self.emp <- c(" Self-emp-inc", " Self-emp-not-inc")
+no.pay <- c(" Never-worked", " Without-pay")
+```
+
+A continuación creamos una función que agrupe en categorías la variable, solo en los casos que hemos visto:
+
+```{r}
+trabajos <- function(trabajo){
+  if(trabajo %in% self.emp){
+    return(" self.emp")
+  }else if(trabajo %in% no.pay){
+    return(" no.pay")
+  }else{
+    return(trabajo)
+  }
+}
+```
+
+Como hemos hecho con las anteriores variables, modificamos la variable con los nuevos datos y comprobamos que se haya cambiado correctamente.
+
+```{r}
+datosAdult1$workclass<- sapply(datosAdult1$workclass, trabajos)
+```
+
+```{r}
+table(datosAdult1$workclass)
+```
+
+## Discretización 
+
+Vamos a observar un poco más nuestras variables. 
+
+
+La variable ingresos Income, solo diferencia entre menor o igual de 50k, no sabemos cuál es la moneda de referencia, y más de 50k. Vemos que el porcentaje de menor o igual de 50k es superior al de observaciones que cobran más de esa cantidad:
+
+```{r}
+round(prop.table(table(datosAdult1$income))*100, 2)
+```
+
+Exactamente un 75.92% de las observaciones cobran menos o igual de 50k y un 24.08% cobra más.
+
+Vamos a ver por continentes, cuáles tienes mayores ingresos.
+
+```{r}
+table(datosAdult1$`native-country`, datosAdult1$income)
+```
+
+Y en porcentajes. 
+
+```{r}
+round(prop.table(table(datosAdult1$`native-country`, datosAdult1$income))*100,2)
+```
+
+Vamos a realizar un filtro y quedarnos con los datos de Nor_America para ver allí cómo se distribuyen los ingresos. Para ello creamos un nuevo data frame "america", filtrando que el continente sea "Nor_America"
+
+```{r}
+america <- filter(datosAdult1, `native-country`=="Nor_America")
+```
+
+Ahora podemos ver los ingresos de menos y de más de 50k de los países EEUU y Canadá.
+```{r}
+table(america$income)
+```
+Y ver el porcentaje de ingresos diferenciando entre hombres y mujeres. Se aprecia que el porcentaje de hombres que viven en EEUU o Canadá y que cobran más de 50K (20,62%) es superior al de mujeres que cobran más de esa cantidad (3,69%).
+```{r}
+round(prop.table(table(america$income, america$sex))*100,2)
+```
+Hay variables que contienen muchos 0 como es el caso de capital-gain y capital-loss. Vamos a ver cuantas de nuestras observaciones son 0 en ambos casos.
+
+```{r}
+table(datosAdult1$`capital-gain`==0)
+```
+
+29,849 observaciones de capital-gain son 0.
+
+```{r}
+table(datosAdult1$`capital-loss`==0)
+```
+
+Y 31,042 de capital-loss también son 0. Dado que la mayor parte de estas dos variables son 0, no vamos a tenerlas en consideración y las eliminamos de nuestro data frame.
+
+```{r}
+datosAdult1 <- datosAdult1 %>% select(age, workclass, fnlwgt, education, `education-num`, `marital-status`, occupation
+                                      , relationship, race, sex, `hour-per-week`, `native-country`, income)
+```
+
+Comprobamos que ahora datosAdult1 tiene 13 variables en lugar de 15.
+
+```{r}
+dim(datosAdult1)
+```
+
+Considero también que la variable relationship no tiene relevancia por lo que también vamos a prescindir de ella.
+
+```{r}
+datosAdult1$relationship <- NULL
+```
+
+Vamos a ver en un gráfico los ingresos según la edad de nuestras observaciones. 
+
+```{r}
+library(ggplot2)
+```
+
+
+```{r}
+ggplot(datosAdult1) + aes(x=as.numeric(age), group= income, fill = income) + geom_histogram(binwidth = 1, color = "blue") + xlab("Edad") + ggtitle("Ingresos según la edad")
+```
+Vamos a ver también la edad según el género.
+
+```{r}
+ggplot(datosAdult1) + aes(x=as.numeric(age), group= sex, fill = sex) + geom_histogram(binwidth = 1, color = "blue") + xlab("Edad") + ggtitle("Edad según el género")
+```
+
+Vamos a ver ahora las variables que tenemos de empleo: occupation y workclass. 
+
+```{r}
+table(datosAdult1$occupation)
+```
+
+```{r}
+table(datosAdult1$workclass)
+```
+
+La variable ocuppation tiene muchos tipos de trabajo diferentes que pueden agruparse por categorías blue collars (operarios), white collars (trabajos administrativos e IT), sector servicios, profesionales, ventas y de origen desconocido (incluimos también las 9 observaciones que trabajan en Armed-Forces por su tamaño)
+
+Además, vamos a tratar de reducir aún más workclass unificando los trabajos que sean del gobierno, así como a incluir los que no tienen paga con lo de origen desconocido. 
+
+
+Primero creamos las variables con las nuevas categorías que hemos elegido y asignamos cada uno de los tipos de trabajo de occupation. 
+
+```{r}
+White_collar <- c(" Adm-clerical", " Exec-managerial", " Tech-support")
+Desconocido <- c(" Armed-Forces", " Unknown")
+Blue_collar <- c(" Craft-repair", " Farming-fishing", " Handlers-cleaners", " Machine-op-inspct", " Transport-moving")
+Servicios <- c(" Other-service", " Priv-house-serv")
+Profesional <- c(" Prof-specialty")
+Ventas <- c(" Sales")
+
+```
+
+Creamos una función que cambie los datos según las categorías.
+
+```{r}
+ocupaciones <- function(ocupacion){
+  if(ocupacion %in% White_collar){
+    return("White_collar")
+  }else if(ocupacion %in% Ventas){
+    return("Sales")
+  }else if(ocupacion %in% Blue_collar){
+    return("Blue_collar")
+  }else if(ocupacion %in% Servicios){
+    return("Servicios")
+  }else if(ocupacion %in% Profesional){
+    return("Profesional")
+  }else{return("Desconocido")}
+}
+```
+
+Y modificamos nuestra variable occupation con dichas categorías.
+
+```{r}
+datosAdult1$occupation<- sapply(datosAdult1$occupation, ocupaciones)
+```
+
+```{r}
+table(datosAdult1$occupation)
+```
+
+Para poder hacer un gráfico con Occupation, convertimos la variable en factor. De esta manera podemos ver visualmente 
+
+```{r}
+datosAdult1$occupation <- factor(datosAdult1$occupation)
+```
+
+
+Contamos el número de observaciones según Occupation y los ingresos y hacemos un nuevo data frame con esos datos. 
+
+
+```{r}
+count <- table(datosAdult1[datosAdult1$occupation == "Blue_collar",]$income)[" <=50K"]
+count <- c(count, table(datosAdult1[datosAdult1$occupation == "Blue_collar",]$income)[" >50K"])
+count <- c(count, table(datosAdult1[datosAdult1$occupation == "Desconocido",]$income)[" <=50K"])
+count <- c(count, table(datosAdult1[datosAdult1$occupation == "Desconocido",]$income)[" >50K"])
+count <- c(count, table(datosAdult1[datosAdult1$occupation == "Profesional",]$income)[" <=50K"])
+count <- c(count, table(datosAdult1[datosAdult1$occupation == "Profesional",]$income)[" >50K"])
+count <- c(count, table(datosAdult1[datosAdult1$occupation == "Sales",]$income)[" <=50K"])
+count <- c(count, table(datosAdult1[datosAdult1$occupation == "Sales",]$income)[" >50K"])
+count <- c(count, table(datosAdult1[datosAdult1$occupation == "White_collar",]$income)[" <=50K"])
+count <- c(count, table(datosAdult1[datosAdult1$occupation == "White_collar",]$income)[" >50K"])
+count <- c(count, table(datosAdult1[datosAdult1$occupation == "Servicios",]$income)[" <=50K"])
+count <- c(count, table(datosAdult1[datosAdult1$occupation == "Servicios",]$income)[" >50K"])
+count <- as.numeric(count)
+
+```
+```{r}
+work <- rep(levels(datosAdult1$occupation), each = 2)
+ingresos <- rep(c(" <=50K", " >50K"), 6)
+work_ingresos <- data.frame(work, ingresos, count)
+work_ingresos
+```
+
+```{r}
+ggplot(work_ingresos, aes(x = work, y = count, fill = ingresos)) + geom_bar(stat = "identity") + ggtitle("Ingresos por clase de trabajo")
+
+```
+
+En el gráfico podemos ver que la mayoría de blue collars u operarios tienen unos ingresos inferiores a 50k y que dentro de los profesionales es donde mayor igualdad de salarios hay. 
+
+Por último copiamos los datos de DatosAdult1 en DatosAdult:
+
+```{r}
+datosAdult <- datosAdult1
+```
+
+
+Aquí termina nuestro análisis exploratorio de datos. 
+
