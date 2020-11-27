@@ -488,8 +488,8 @@ unique(df1$`native-country`)
 ```
 
 ```{r}
-boxplot(df1$`native-country`,
-        main = "native-country"
+boxplot(df1$fnlwgt,
+        main = "native-country",
         boxwex = 0.5, col = "red")
 ```
 Vemos que hay algunos datos outliers. Vamos a ver la tabla de frecuencias y creamos las distintas categorías, así veremos si sigue habiendo outliers o no. 
@@ -536,7 +536,7 @@ table(df1$`native-country`)
 ```
 
 ```{r}
-boxplot(df1$`native-country`,
+boxplot(df1$fnlwgt,
         main = "native-country",
         boxwex = 0.5, col = "blue")
 ```
